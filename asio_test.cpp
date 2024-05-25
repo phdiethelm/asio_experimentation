@@ -1,8 +1,7 @@
-
-#include "fmt/format.h"
-#include <asio.hpp>
 #include <iostream>
 #include <vector>
+
+#include <asio.hpp>
 
 struct PrivateData {
     size_t i;
