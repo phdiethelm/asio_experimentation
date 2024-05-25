@@ -13,3 +13,9 @@ target_link_libraries(asio INTERFACE pthread)
 
 add_executable(asio_test asio_test.cpp)
 target_link_libraries(asio_test PRIVATE asio)
+
+add_executable(recv_asio recv_asio.cpp)
+target_link_libraries(recv_asio PRIVATE asio)
+
+add_executable(send_asio send_asio.cpp)
+target_link_libraries(send_asio PRIVATE asio)
