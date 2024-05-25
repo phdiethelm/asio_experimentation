@@ -3,19 +3,17 @@
 
 #include <asio.hpp>
 
+constexpr unsigned short UDP_DST_PORT = 1234;
+constexpr unsigned short BUFFER_COUNT = 128;
+
 struct PrivateData {
     size_t i;
     char buffer[2048];
 };
 
-void handle_receive(
-    PrivateData* context,
-    asio::ip::udp::socket& socket,
-    asio::ip::udp::endpoint& endpoint,
-    asio::error_code,
-    size_t bytes_transferred)
+void handle_receive(PrivateData* context, asio::ip::udp::socket& socket, asio::error_code, size_t bytes_transferred)
 {
-    std::cout << "Cb: context is: " << context << std::endl;
+    std::cout << "handle_receive: context is: " << context << std::endl;
     std::cout << "  -> i:                 " << context->i << std::endl;
     std::cout << "  -> bytes_transferred: " << bytes_transferred << std::endl;
 
@@ -25,8 +23,10 @@ void handle_receive(
 
     // Send answer
     socket.async_send_to(
-        asio::const_buffer(&context->i, sizeof(context->i)), endpoint, [](asio::error_code, size_t bytes_transferred) {
-            std::cout << "Send: bytes_transferred: " << bytes_transferred << std::endl;
+        asio::const_buffer(&context->i, sizeof(context->i)),
+        asio::ip::udp::endpoint(asio::ip::udp::v4(), UDP_DST_PORT),
+        [](asio::error_code, size_t bytes_transferred) {
+            std::cout << "handle_receive: async_send_to: bytes_transferred: " << bytes_transferred << std::endl;
         });
 
     // re-enqueue
@@ -36,7 +36,6 @@ void handle_receive(
             handle_receive,
             context,
             std::ref(socket),
-            std::ref(endpoint),
             asio::placeholders::error,
             asio::placeholders::bytes_transferred));
 }
@@ -45,15 +44,14 @@ int main()
 {
     asio::io_context io_context;
     asio::ip::udp::socket socket(io_context);
-    asio::ip::udp::endpoint endpoint(asio::ip::udp::v4(), 1234);
 
     socket.open(asio::ip::udp::v4());
-    socket.bind(endpoint);
+    socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), UDP_DST_PORT));
 
     std::vector<PrivateData*> private_data;
 
     // Create and enqueue some buffer
-    for (size_t i = 0; i < 1000; i++) {
+    for (size_t i = 0; i < BUFFER_COUNT; i++) {
         auto context = new PrivateData;
         context->i = i;
         private_data.push_back(context);
@@ -66,16 +64,17 @@ int main()
                 handle_receive,
                 context,
                 std::ref(socket),
-                std::ref(endpoint),
                 asio::placeholders::error,
                 asio::placeholders::bytes_transferred));
     }
 
-    // Start the madness
+    // Initial send
     size_t initial = 0;
     socket.async_send_to(
-        asio::const_buffer(&initial, sizeof(initial)), endpoint, [](asio::error_code, size_t bytes_transferred) {
-            std::cout << "Send: bytes_transferred: " << bytes_transferred << std::endl;
+        asio::const_buffer(&initial, sizeof(initial)),
+        asio::ip::udp::endpoint(asio::ip::udp::v4(), UDP_DST_PORT),
+        [](asio::error_code, size_t bytes_transferred) {
+            std::cout << "main: async_send_to: bytes_transferred: " << bytes_transferred << std::endl;
         });
 
     // Run for some time
