@@ -19,3 +19,7 @@ target_link_libraries(recv_asio PRIVATE asio)
 
 add_executable(send_asio send_asio.cpp)
 target_link_libraries(send_asio PRIVATE asio)
+
+
+add_executable(send_asio2 send_asio2.cpp)
+target_link_libraries(send_asio2 PRIVATE asio)
